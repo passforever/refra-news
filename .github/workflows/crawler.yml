@@ -1,6 +1,9 @@
 name: 每日资讯爬取 & 部署
 
 on:
+  push:
+    branches:
+      - master
   schedule:
     # 每天北京时间 02:00（UTC 18:00）自动执行
     - cron: '0 18 * * *'
