@@ -31,7 +31,9 @@ export type IndustryType =
   | 'petrochemical'
   | 'ceramic'
   | 'power'
-  | 'carbon';
+  | 'carbon'
+  | 'hotblast'    // 热风炉
+  | 'cokeoven';   // 焦炉
 
 export interface Industry {
   id: IndustryType;

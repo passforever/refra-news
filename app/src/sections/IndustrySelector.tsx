@@ -8,7 +8,7 @@ interface IndustrySelectorProps {
 }
 
 export const IndustrySelector: React.FC<IndustrySelectorProps> = ({ selected, onSelect }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true); // 默认展开
 
   return (
     <section className="bg-white border-b border-gray-100 shadow-sm">
@@ -25,7 +25,7 @@ export const IndustrySelector: React.FC<IndustrySelectorProps> = ({ selected, on
             {expanded ? '收起 ▲' : '展开全部 ▼'}
           </button>
         </div>
-        <div className={`grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 transition-all duration-300 overflow-hidden ${!expanded ? 'max-h-20' : 'max-h-96'}`}>
+        <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-2 transition-all duration-300 overflow-hidden ${!expanded ? 'max-h-20' : 'max-h-96'}`}>
           {INDUSTRIES.map((industry) => (
             <button
               key={industry.id}

@@ -91,10 +91,61 @@ export default function App() {
             <button
               className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="打开菜单"
             >
-              ☰
+              {sidebarOpen ? '✕' : '☰'}
             </button>
           </div>
+
+          {/* Mobile sidebar overlay */}
+          {sidebarOpen && (
+            <>
+              <div
+                className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+              <div className="fixed top-16 right-0 w-64 h-[calc(100vh-4rem)] bg-white shadow-xl z-50 lg:hidden overflow-y-auto">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="font-bold text-gray-900">导航菜单</span>
+                    <button
+                      onClick={() => setSidebarOpen(false)}
+                      className="p-2 text-gray-400 hover:text-gray-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <nav className="space-y-1">
+                    {['首页', '行情', '技术库', '企业名录', '展会日历', '关于'].map((item) => (
+                      <a
+                        key={item}
+                        href="#"
+                        className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        {item}
+                      </a>
+                    ))}
+                  </nav>
+                  <div className="mt-6 pt-4 border-t">
+                    <p className="text-xs text-gray-400 mb-2">行业链接</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['耐材协会', '冶金网', '水泥网', '玻璃网'].map((link) => (
+                        <a
+                          key={link}
+                          href="#"
+                          className="text-xs bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 px-2 py-1 rounded transition-colors"
+                          onClick={() => setSidebarOpen(false)}
+                        >
+                          {link}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Mobile search */}
           <div className="sm:hidden pb-3">

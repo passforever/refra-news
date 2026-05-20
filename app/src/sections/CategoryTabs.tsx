@@ -12,12 +12,12 @@ export const CategoryTabs: React.FC<CategoryTabsProps> = ({ selected, onSelect, 
   const all = [{ id: 'all' as const, name: '全部', icon: '📌', color: 'text-gray-600' }, ...CATEGORIES];
 
   return (
-    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-1">
+    <div className="flex flex-wrap gap-2 py-1 justify-start sm:justify-center">
       {all.map((cat) => (
         <button
           key={cat.id}
           onClick={() => onSelect(cat.id as NewsCategory | 'all')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 border ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${
             selected === cat.id
               ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200'
               : 'bg-white text-gray-600 border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700'
