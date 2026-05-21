@@ -25,14 +25,14 @@ export const CATEGORIES: CategoryInfo[] = [
 ];
 
 export const MOCK_MARKET_DATA: MarketData[] = [
-  { name: '镁砂（97#大结晶）', price: '4,850', change: '+120', changePercent: '+2.54%', trend: 'up', unit: '元/吨' },
-  { name: '棕刚玉（F24粒度砂）', price: '2,680', change: '-50', changePercent: '-1.83%', trend: 'down', unit: '元/吨' },
-  { name: '白刚玉（WA36微粉）', price: '3,150', change: '+30', changePercent: '+0.96%', trend: 'up', unit: '元/吨' },
-  { name: '碳化硅（98#绿碳化硅）', price: '7,200', change: '0', changePercent: '0.00%', trend: 'flat', unit: '元/吨' },
-  { name: '硅线石精矿', price: '1,980', change: '+45', changePercent: '+2.32%', trend: 'up', unit: '元/吨' },
-  { name: '铝矾土（68%min）', price: '850', change: '-15', changePercent: '-1.74%', trend: 'down', unit: '元/吨' },
-  { name: '锆英砂（66%ZrO₂）', price: '12,800', change: '+320', changePercent: '+2.56%', trend: 'up', unit: '美元/吨' },
-  { name: '石墨电极（φ500mm）', price: '15,000', change: '+500', changePercent: '+3.45%', trend: 'up', unit: '元/吨' },
+  { name: '镁砂（97#大结晶）', price: '4,850', change: '+120', changePercent: '+2.54%', trend: 'up', unit: '元/吨', monthlyChangePercent: '+5.8%', monthlyTrend: 'up', quarterlyChangePercent: '+12.3%', quarterlyTrend: 'up', yoyChangePercent: '+18.6%', yoyTrend: 'up' },
+  { name: '棕刚玉（F24粒度砂）', price: '2,680', change: '-50', changePercent: '-1.83%', trend: 'down', unit: '元/吨', monthlyChangePercent: '-3.2%', monthlyTrend: 'down', quarterlyChangePercent: '+1.5%', quarterlyTrend: 'up', yoyChangePercent: '+5.8%', yoyTrend: 'up' },
+  { name: '白刚玉（WA36微粉）', price: '3,150', change: '+30', changePercent: '+0.96%', trend: 'up', unit: '元/吨', monthlyChangePercent: '+2.1%', monthlyTrend: 'up', quarterlyChangePercent: '+4.5%', quarterlyTrend: 'up', yoyChangePercent: '+8.2%', yoyTrend: 'up' },
+  { name: '碳化硅（98#绿碳化硅）', price: '7,200', change: '0', changePercent: '0.00%', trend: 'flat', unit: '元/吨', monthlyChangePercent: '-0.5%', monthlyTrend: 'down', quarterlyChangePercent: '+2.8%', quarterlyTrend: 'up', yoyChangePercent: '+6.3%', yoyTrend: 'up' },
+  { name: '硅线石精矿', price: '1,980', change: '+45', changePercent: '+2.32%', trend: 'up', unit: '元/吨', monthlyChangePercent: '+4.6%', monthlyTrend: 'up', quarterlyChangePercent: '+8.9%', quarterlyTrend: 'up', yoyChangePercent: '+15.2%', yoyTrend: 'up' },
+  { name: '铝矾土（68%min）', price: '850', change: '-15', changePercent: '-1.74%', trend: 'down', unit: '元/吨', monthlyChangePercent: '-2.8%', monthlyTrend: 'down', quarterlyChangePercent: '-1.2%', quarterlyTrend: 'down', yoyChangePercent: '+3.5%', yoyTrend: 'up' },
+  { name: '锆英砂（66%ZrO₂）', price: '12,800', change: '+320', changePercent: '+2.56%', trend: 'up', unit: '美元/吨', monthlyChangePercent: '+6.5%', monthlyTrend: 'up', quarterlyChangePercent: '+15.2%', quarterlyTrend: 'up', yoyChangePercent: '+28.5%', yoyTrend: 'up' },
+  { name: '石墨电极（φ500mm）', price: '15,000', change: '+500', changePercent: '+3.45%', trend: 'up', unit: '元/吨', monthlyChangePercent: '+8.2%', monthlyTrend: 'up', quarterlyChangePercent: '+18.6%', quarterlyTrend: 'up', yoyChangePercent: '+35.8%', yoyTrend: 'up' },
 ];
 
 export const MOCK_NEWS: NewsItem[] = [

@@ -23,9 +23,9 @@ export const CrawlerSourcesPanel: React.FC = () => {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100">
         <h3 className="font-bold text-gray-900 flex items-center gap-2">
-          <span className="text-blue-500">🕷️</span> 数据来源
+          <span className="text-blue-500">📋</span> 权威来源
         </h3>
-        <p className="text-xs text-gray-400 mt-1">每日凌晨自动爬取更新</p>
+        <p className="text-xs text-gray-400 mt-1">精选行业优质资讯渠道</p>
       </div>
       <div className="divide-y divide-gray-50">
         {CRAWLER_SOURCES.map((source, i) => (

@@ -28,7 +28,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
 
-  const { news, loading, lastUpdated } = useNews(selectedIndustry, selectedCategory);
+  const { news, loading } = useNews(selectedIndustry, selectedCategory);
   const filteredNews = useSearch(searchQuery, news);
 
   // 处理导航切换
@@ -235,12 +235,6 @@ export default function App() {
                   </span>
                 )}
               </div>
-              {lastUpdated && (
-                <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  上次更新：{lastUpdated}
-                </div>
-              )}
             </div>
 
             {loading ? (
@@ -336,9 +330,9 @@ export default function App() {
 
             {/* Update schedule */}
             <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-5 text-white">
-              <h3 className="font-bold text-lg mb-2">🕷️ 自动更新</h3>
+              <h3 className="font-bold text-lg mb-2">📡 权威数据</h3>
               <p className="text-sm text-blue-100 mb-3 leading-relaxed">
-                本平台每日凌晨 02:00 自动爬取各大权威资讯网站，确保内容实时更新。
+                汇聚行业协会官网、专业资讯门户及权威媒体内容，为您提供及时准确的行业资讯服务。
               </p>
               <div className="space-y-1.5 text-xs text-blue-100">
                 <div className="flex items-center gap-2">
@@ -401,7 +395,7 @@ export default function App() {
               © 2026 耐火材料资讯平台 | 内容来源于公开权威网站，仅供参考
             </p>
             <p className="text-xs text-gray-600">
-              数据每日自动更新 · GitHub Pages 托管
+              聚焦高温窑炉行业 · 服务钢铁水泥玻璃用户
             </p>
           </div>
         </div>
