@@ -28,6 +28,7 @@ export default function App() {
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
   const { news, loading } = useNews(selectedIndustry, selectedCategory);
   const filteredNews = useSearch(searchQuery, news);
@@ -236,6 +237,42 @@ export default function App() {
                   </span>
                 )}
               </div>
+              {/* 视图切换 */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    viewMode === 'card'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  title="卡片视图"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                    <rect x="0" y="0" width="6" height="6" rx="1"/>
+                    <rect x="8" y="0" width="6" height="6" rx="1"/>
+                    <rect x="0" y="8" width="6" height="6" rx="1"/>
+                    <rect x="8" y="8" width="6" height="6" rx="1"/>
+                  </svg>
+                  卡片
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    viewMode === 'list'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  title="列表视图"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                    <rect x="0" y="0" width="14" height="3" rx="1"/>
+                    <rect x="0" y="5.5" width="14" height="3" rx="1"/>
+                    <rect x="0" y="11" width="14" height="3" rx="1"/>
+                  </svg>
+                  列表
+                </button>
+              </div>
             </div>
 
             {loading ? (
@@ -270,32 +307,67 @@ export default function App() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Top featured news */}
-                {featuredNews.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {featuredNews.map((item) => (
-                      <NewsCard
-                        key={item.id}
-                        item={item}
-                        variant="large"
-                        onClick={setSelectedNews}
-                      />
-                    ))}
+                {viewMode === 'list' ? (
+                  /* 列表视图 */
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    {/* 置顶资讯（列表模式） */}
+                    {featuredNews.length > 0 && (
+                      <div className="border-b border-gray-100">
+                        {featuredNews.map((item) => (
+                          <NewsCard
+                            key={item.id}
+                            item={item}
+                            variant="list"
+                            onClick={setSelectedNews}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {/* 普通资讯（列表模式） */}
+                    {listNews.length > 0 && (
+                      <div>
+                        {listNews.map((item) => (
+                          <NewsCard
+                            key={item.id}
+                            item={item}
+                            variant="list"
+                            onClick={setSelectedNews}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                ) : (
+                  /* 卡片视图 */
+                  <>
+                    {/* Top featured news */}
+                    {featuredNews.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {featuredNews.map((item) => (
+                          <NewsCard
+                            key={item.id}
+                            item={item}
+                            variant="large"
+                            onClick={setSelectedNews}
+                          />
+                        ))}
+                      </div>
+                    )}
 
-                {/* Regular news grid */}
-                {listNews.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {listNews.map((item) => (
-                      <NewsCard
-                        key={item.id}
-                        item={item}
-                        variant="medium"
-                        onClick={setSelectedNews}
-                      />
-                    ))}
-                  </div>
+                    {/* Regular news grid */}
+                    {listNews.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {listNews.map((item) => (
+                          <NewsCard
+                            key={item.id}
+                            item={item}
+                            variant="medium"
+                            onClick={setSelectedNews}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

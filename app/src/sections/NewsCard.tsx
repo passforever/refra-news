@@ -1,7 +1,7 @@
 import React from 'react';
 import type { NewsItem } from '@/types';
 import { CATEGORIES } from '@/data/mockData';
-import { getImageForTitle } from '@/data/imageMapping';
+import { getIndustryImageURI } from '@/data/industryVisuals';
 
 interface NewsCardProps {
   item: NewsItem;
@@ -22,13 +22,13 @@ const categoryColorMap: Record<string, string> = {
 export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', onClick }) => {
   const cat = CATEGORIES.find((c) => c.id === item.category);
   const colorClass = categoryColorMap[item.category] || 'bg-gray-100 text-gray-700 border-gray-200';
-  // 优先使用数据中的图片，否则根据标题自动匹配
-  const imageUrl = item.imageUrl || getImageForTitle(item.title);
+  // 优先使用数据中的图片，否则根据标题生成专业行业视觉
+  const imageUrl = item.imageUrl || getIndustryImageURI(item.title);
 
   if (variant === 'list') {
     return (
       <article
-        className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-blue-50/40 rounded-lg px-2 transition-colors"
+        className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-blue-50/40 rounded-lg px-3 transition-colors"
         onClick={() => onClick?.(item)}
       >
         <span className={`text-xs font-medium px-2 py-0.5 rounded border whitespace-nowrap ${colorClass}`}>
@@ -50,28 +50,30 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', on
         className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300"
         onClick={() => onClick?.(item)}
       >
-        {imageUrl && (
-          <div className="relative overflow-hidden h-52">
-            <img
-              src={imageUrl}
-              alt={item.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-            />
-            {item.isTop && (
-              <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
-                置顶
-              </span>
-            )}
-          </div>
-        )}
-        <div className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className={`text-xs font-medium px-2 py-0.5 rounded border ${colorClass}`}>
-              {cat?.icon} {cat?.name}
+        <div className="relative overflow-hidden h-52">
+          <img
+            src={imageUrl}
+            alt={item.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+          {/* 渐变遮罩增强文字可读性 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          {item.isTop && (
+            <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full shadow">
+              置顶
             </span>
-            <span className="text-xs text-gray-400">{item.publishedAt}</span>
+          )}
+          <div className="absolute bottom-3 left-3 right-3">
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium px-2 py-0.5 rounded border backdrop-blur-sm ${colorClass}`}>
+                {cat?.icon} {cat?.name}
+              </span>
+              <span className="text-xs text-white/80">{item.publishedAt}</span>
+            </div>
           </div>
+        </div>
+        <div className="p-5">
           <h3 className="text-base font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
             {item.title}
           </h3>
@@ -99,16 +101,14 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', on
         className="group cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 flex gap-3 p-3"
         onClick={() => onClick?.(item)}
       >
-        {imageUrl && (
-          <div className="w-20 h-16 flex-shrink-0 overflow-hidden rounded-lg">
-            <img
-              src={imageUrl}
-              alt={item.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-            />
-          </div>
-        )}
+        <div className="w-24 h-18 flex-shrink-0 overflow-hidden rounded-lg">
+          <img
+            src={imageUrl}
+            alt={item.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1">
             <span className={`text-xs px-1.5 py-0.5 rounded border ${colorClass}`}>{cat?.name}</span>
@@ -128,23 +128,21 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', on
       className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300"
       onClick={() => onClick?.(item)}
     >
-      {imageUrl && (
-        <div className="relative overflow-hidden h-40">
-          <img
-            src={imageUrl}
-            alt={item.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
-          />
-        </div>
-      )}
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <span className={`text-xs font-medium px-2 py-0.5 rounded border ${colorClass}`}>
+      <div className="relative overflow-hidden h-40">
+        <img
+          src={imageUrl}
+          alt={item.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+        <div className="absolute bottom-2 left-2">
+          <span className={`text-xs font-medium px-1.5 py-0.5 rounded border backdrop-blur-sm ${colorClass}`}>
             {cat?.icon} {cat?.name}
           </span>
-          <span className="text-xs text-gray-400">{item.publishedAt}</span>
         </div>
+      </div>
+      <div className="p-4">
         <h3 className="text-sm font-bold text-gray-900 mb-1.5 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
           {item.title}
         </h3>

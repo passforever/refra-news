@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { NewsItem, NewsCategory, IndustryType } from '@/types';
 import { CATEGORIES } from '@/data/mockData';
 import { INDUSTRIES } from '@/data/mockData';
-import { getImageForTitle } from '@/data/imageMapping';
+import { getIndustryImageURI } from '@/data/industryVisuals';
 
 const ADMIN_STORAGE_KEY = 'refra_admin_news';
 const ADMIN_PASSWORD = 'dy2026'; // 简单密码保护
@@ -119,7 +119,7 @@ export const AdminPanel: React.FC = () => {
     }
 
     const tagsArray = form.tags.split(/[、,，\s]+/).filter(t => t.trim());
-    const imageUrl = form.imageUrl.trim() || getImageForTitle(form.title);
+    const imageUrl = form.imageUrl.trim() || getIndustryImageURI(form.title);
 
     const newsItem: NewsItem = {
       id: editingItem?.id || `admin_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -437,7 +437,7 @@ export const AdminPanel: React.FC = () => {
                 />
                 {!form.imageUrl && form.title && (
                   <p className="text-xs text-blue-500 mt-1">
-                    将自动匹配关键词图片：{getImageForTitle(form.title).slice(0, 40)}...
+                    将自动匹配关键词图片：{getIndustryImageURI(form.title).slice(0, 40)}...
                   </p>
                 )}
               </div>
@@ -551,7 +551,7 @@ export const AdminPanel: React.FC = () => {
                   {/* 缩略图 */}
                   <div className="w-16 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                     <img
-                      src={item.imageUrl || getImageForTitle(item.title)}
+                      src={item.imageUrl || getIndustryImageURI(item.title)}
                       alt=""
                       className="w-full h-full object-cover"
                     />

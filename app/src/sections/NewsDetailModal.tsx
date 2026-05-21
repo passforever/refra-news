@@ -1,7 +1,7 @@
 import React from 'react';
 import type { NewsItem } from '@/types';
 import { CATEGORIES } from '@/data/mockData';
-import { getImageForTitle } from '@/data/imageMapping';
+import { getIndustryImageURI } from '@/data/industryVisuals';
 
 interface NewsDetailModalProps {
   item: NewsItem | null;
@@ -11,7 +11,7 @@ interface NewsDetailModalProps {
 export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({ item, onClose }) => {
   if (!item) return null;
   const cat = CATEGORIES.find((c) => c.id === item.category);
-  const imageUrl = item.imageUrl || getImageForTitle(item.title);
+  const imageUrl = item.imageUrl || getIndustryImageURI(item.title, 800, 400);
 
   return (
     <div
