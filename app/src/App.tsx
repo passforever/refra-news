@@ -10,15 +10,41 @@ import { CrawlerSourcesPanel } from '@/sections/CrawlerSourcesPanel';
 import { NewsDetailModal } from '@/sections/NewsDetailModal';
 import { CATEGORIES } from '@/data/mockData';
 
+// 导航项配置
+const NAV_ITEMS = [
+  { id: 'home', label: '首页', category: 'all' as const },
+  { id: 'market', label: '行情', category: 'market' as const },
+  { id: 'tech', label: '技术库', category: 'technology' as const },
+  { id: 'enterprise', label: '企业名录', category: 'enterprise' as const },
+  { id: 'exhibition', label: '展会日历', category: 'exhibition' as const },
+  { id: 'about', label: '关于', category: 'all' as const },
+];
+
 export default function App() {
   const { selectedIndustry, setSelectedIndustry } = useIndustry();
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState('home');
 
   const { news, loading, lastUpdated } = useNews(selectedIndustry, selectedCategory);
   const filteredNews = useSearch(searchQuery, news);
+
+  // 处理导航切换
+  const handleNavClick = (navId: string) => {
+    setActiveNav(navId);
+    const navItem = NAV_ITEMS.find(item => item.id === navId);
+    if (navItem && navItem.category) {
+      setSelectedCategory(navItem.category);
+    }
+    // 如果是"关于"页面，显示全部
+    if (navId === 'about') {
+      setSelectedCategory('all');
+    }
+    // 滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { all: news.length };
@@ -76,14 +102,18 @@ export default function App() {
 
             {/* Nav Links */}
             <nav className="hidden lg:flex items-center gap-1">
-              {['首页', '行情', '技术库', '企业名录', '展会日历', '关于'].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className="text-sm text-gray-600 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item.id)}
+                  className={`text-sm px-3 py-2 rounded-lg transition-colors font-medium ${
+                    activeNav === item.id
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                  }`}
                 >
-                  {item}
-                </a>
+                  {item.label}
+                </button>
               ))}
             </nav>
 
@@ -116,15 +146,21 @@ export default function App() {
                     </button>
                   </div>
                   <nav className="space-y-1">
-                    {['首页', '行情', '技术库', '企业名录', '展会日历', '关于'].map((item) => (
-                      <a
-                        key={item}
-                        href="#"
-                        className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
-                        onClick={() => setSidebarOpen(false)}
+                    {NAV_ITEMS.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          handleNavClick(item.id);
+                          setSidebarOpen(false);
+                        }}
+                        className={`block w-full text-left px-4 py-3 rounded-lg transition-colors font-medium ${
+                          activeNav === item.id
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                        }`}
                       >
-                        {item}
-                      </a>
+                        {item.label}
+                      </button>
                     ))}
                   </nav>
                   <div className="mt-6 pt-4 border-t">
