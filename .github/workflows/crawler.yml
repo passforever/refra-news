@@ -31,9 +31,21 @@ jobs:
         run: |
           pip install -r app/crawler/requirements.txt
 
-      - name: Run crawler
+      - name: Run generic crawler
         run: |
           python app/crawler/crawler.py
+        continue-on-error: true
+
+      - name: Run Taike Steel crawler
+        run: |
+          python app/crawler/taike_crawler.py
+        continue-on-error: true
+
+      - name: Verify crawled data
+        run: |
+          echo "=== Checking crawled data files ==="
+          ls -la app/src/data/taikeNews.json 2>/dev/null && echo "✓ taikeNews.json exists" || echo "✗ taikeNews.json missing"
+          ls -la app/src/data/newsData.json 2>/dev/null && echo "✓ newsData.json exists" || echo "✗ newsData.json missing"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

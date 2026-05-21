@@ -9,8 +9,9 @@
 
 说明:
   泰科钢铁公众号内容通过 jintiankansha.com 平台可获取标题列表，
-  由于微信公众号的限制，部分文章正文需要通过公众号原文链接访问。
-  本脚本优先抓取标题和基本信息，自动分类到耐火材料相关行业。
+  页面结构为 div.cell.item > span.item_title > span.hide-content（标题）
+  日期信息在 span.small.fade 文本中（"昨天"/"N天前" 等相对时间）
+  部分文章有 /t/xxx 链接，新版文章可能无链接。
 """
 
 import json
@@ -87,7 +88,7 @@ INDUSTRY_KEYWORDS = {
     "cokeoven": ["焦炉", "焦炭"],
 }
 
-# 耐火材料相关关键词（用于筛选与耐材相关的文章）
+# 耐火材料相关关键词
 REFRACTORY_KEYWORDS = [
     "耐火", "耐材", "镁砂", "镁碳砖", "铝矾土", "刚玉", "碳化硅",
     "浇注料", "高铝砖", "硅砖", "AZS", "锆", "炉衬", "窑衬",
@@ -96,7 +97,6 @@ REFRACTORY_KEYWORDS = [
 
 
 def classify_category(title: str) -> str:
-    """根据标题关键词自动分类"""
     for cat, keywords in CATEGORY_KEYWORDS.items():
         for kw in keywords:
             if kw in title:
@@ -105,7 +105,6 @@ def classify_category(title: str) -> str:
 
 
 def classify_industries(title: str) -> list:
-    """根据标题关键词自动识别关联行业"""
     industries = ["all"]
     for industry, keywords in INDUSTRY_KEYWORDS.items():
         for kw in keywords:
@@ -115,27 +114,12 @@ def classify_industries(title: str) -> list:
     return industries
 
 
-def is_refractory_related(title: str) -> bool:
-    """判断文章是否与耐火材料相关"""
-    # 钢铁行业文章默认与耐材相关
-    for kw in INDUSTRY_KEYWORDS["steel"]:
-        if kw in title:
-            return True
-    for kw in REFRACTORY_KEYWORDS:
-        if kw in title:
-            return True
-    return False
-
-
 def extract_tags(title: str) -> list:
-    """从标题中提取标签"""
     tags = []
-    all_kw = {**INDUSTRY_KEYWORDS}
-    for group, keywords in all_kw.items():
+    for group, keywords in INDUSTRY_KEYWORDS.items():
         for kw in keywords:
             if kw in title and len(tags) < 5:
                 tags.append(kw)
-    # 添加分类相关标签
     for cat, keywords in CATEGORY_KEYWORDS.items():
         for kw in keywords:
             if kw in title and kw not in tags and len(tags) < 5:
@@ -144,16 +128,37 @@ def extract_tags(title: str) -> list:
 
 
 def generate_summary(title: str) -> str:
-    """根据标题生成简短摘要"""
-    # 移除常见前缀
     clean = re.sub(r'^[【\[][^】\]]+[】\]]', '', title).strip()
     if len(clean) > 60:
         return clean[:57] + "..."
     return clean
 
 
+def parse_relative_date(text: str) -> str:
+    """将相对日期文本转换为 YYYY-MM-DD 格式"""
+    today = datetime.today()
+    text = text.strip()
+
+    if "分钟前" in text or "刚刚" in text:
+        return today.strftime("%Y-%m-%d")
+    if "小时前" in text:
+        return today.strftime("%Y-%m-%d")
+    if "昨天" in text:
+        return (today - timedelta(days=1)).strftime("%Y-%m-%d")
+    if "前天" in text:
+        return (today - timedelta(days=2)).strftime("%Y-%m-%d")
+    m = re.search(r'(\d+)天前', text)
+    if m:
+        return (today - timedelta(days=int(m.group(1)))).strftime("%Y-%m-%d")
+    m = re.search(r'(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})', text)
+    if m:
+        return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+
+    return today.strftime("%Y-%m-%d")
+
+
 # ─────────────────────────────────────────────
-# 爬取泰科钢铁公众号
+# 爬取泰科钢铁公众号 - 修复版
 # ─────────────────────────────────────────────
 def crawl_taike(session: "requests.Session", max_pages: int = TAIKE_PAGES) -> list:
     """从'今天看啥'平台爬取泰科钢铁公众号文章"""
@@ -168,18 +173,17 @@ def crawl_taike(session: "requests.Session", max_pages: int = TAIKE_PAGES) -> li
             resp.encoding = 'utf-8'
             soup = BeautifulSoup(resp.text, "lxml")
 
-            # 尝试多种选择器
-            articles = soup.select("div.stream-item") or soup.select("article") or soup.select(".article-item")
+            # 正确选择器：div.cell.item
+            items = soup.select("div.cell.item")
+            print(f"  [INFO] 找到 {len(items)} 个元素")
 
-            if not articles:
-                # 备用：查找所有包含标题链接的元素
-                articles = soup.select("a[href*='/t/']")
-
-            for article in articles:
+            for item_el in items:
                 try:
-                    # 提取标题
-                    title_el = (article.select_one("h2") or article.select_one("h3")
-                               or article.select_one(".title") or article.select_one("a"))
+                    # 提取标题：span.item_title > span.hide-content
+                    title_el = item_el.select_one("span.item_title span.hide-content")
+                    if not title_el:
+                        # 备用：直接取 span.item_title 的文本
+                        title_el = item_el.select_one("span.item_title")
                     if not title_el:
                         continue
 
@@ -187,9 +191,9 @@ def crawl_taike(session: "requests.Session", max_pages: int = TAIKE_PAGES) -> li
                     if not title or len(title) < 5:
                         continue
 
-                    # 提取链接
-                    link = "#"
-                    link_el = article.select_one("a[href]")
+                    # 提取链接：优先找 a[href*="/t/"]，否则用专栏链接
+                    link = TAIKE_COLUMN_URL
+                    link_el = item_el.select_one("a[href*='/t/']")
                     if link_el:
                         href = link_el.get("href", "")
                         if href and not href.startswith("http"):
@@ -197,22 +201,16 @@ def crawl_taike(session: "requests.Session", max_pages: int = TAIKE_PAGES) -> li
                             href = urljoin(url, href)
                         link = href
 
-                    # 提取日期
-                    date_str = datetime.today().strftime("%Y-%m-%d")
-                    date_el = article.select_one("time") or article.select_one(".date") or article.select_one(".time")
-                    if date_el:
-                        date_text = date_el.get_text(strip=True)
-                        # 尝试解析相对日期
-                        if "天前" in date_text:
-                            days = re.search(r'(\d+)天前', date_text)
-                            if days:
-                                date_str = (datetime.today() - timedelta(days=int(days.group(1)))).strftime("%Y-%m-%d")
-                        elif "昨天" in date_text:
-                            date_str = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
-                        elif "前天" in date_text:
-                            date_str = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
-                        elif re.search(r'\d{4}[-/]\d{1,2}[-/]\d{1,2}', date_text):
-                            date_str = re.search(r'(\d{4}[-/]\d{1,2}[-/]\d{1,2})', date_text).group(1).replace("/", "-")
+                    # 提取日期：从 span.small.fade 文本中解析
+                    date_str = today_str = datetime.today().strftime("%Y-%m-%d")
+                    fade_el = item_el.select_one("span.small.fade")
+                    if fade_el:
+                        fade_text = fade_el.get_text(separator=" ", strip=True)
+                        date_str = parse_relative_date(fade_text)
+                    else:
+                        # 备用：从整个item文本中寻找日期
+                        full_text = item_el.get_text(separator=" ", strip=True)
+                        date_str = parse_relative_date(full_text)
 
                     # 自动分类
                     category = classify_category(title)
@@ -238,6 +236,7 @@ def crawl_taike(session: "requests.Session", max_pages: int = TAIKE_PAGES) -> li
                     print(f"    [SKIP] 解析条目失败: {e}")
                     continue
 
+            print(f"  [INFO] 第{page}页解析完成，累计 {len(all_items)} 条")
             time.sleep(REQUEST_DELAY)
 
         except Exception as e:

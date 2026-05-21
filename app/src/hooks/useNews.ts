@@ -1,9 +1,49 @@
 import { useState, useEffect } from 'react';
 import type { NewsItem, IndustryType, NewsCategory } from '@/types';
 import { MOCK_NEWS } from '@/data/mockData';
+// 导入爬虫数据（Vite 支持直接 import JSON）
+import taikeNewsData from '@/data/taikeNews.json';
 
 const INDUSTRY_KEY = 'refra_selected_industry';
 const ADMIN_STORAGE_KEY = 'refra_admin_news';
+
+// 解析爬虫数据：将 JSON 中的 items 转换为 NewsItem 格式
+function loadCrawledNews(): NewsItem[] {
+  const items: NewsItem[] = [];
+
+  // 泰科钢铁爬虫数据
+  if (taikeNewsData && taikeNewsData.items && Array.isArray(taikeNewsData.items)) {
+    for (const item of taikeNewsData.items) {
+      items.push({
+        id: item.id || `tk_${Math.random().toString(36).slice(2, 10)}`,
+        title: item.title || '',
+        summary: item.summary || item.title || '',
+        source: item.source || '泰科钢铁',
+        sourceUrl: item.sourceUrl || '#',
+        category: (item.category || 'industry-news') as NewsCategory,
+        publishedAt: item.publishedAt || new Date().toISOString().split('T')[0],
+        tags: item.tags || [],
+        industries: (item.industries || ['all', 'steel']) as IndustryType[],
+        isTop: item.isTop || false,
+      });
+    }
+  }
+
+  // 如果未来有更多爬虫数据源，在此处添加
+  // import otherNewsData from '@/data/otherNews.json';
+  // ...
+
+  return items;
+}
+
+// 缓存爬虫数据，避免每次渲染重新解析
+let _crawledNewsCache: NewsItem[] | null = null;
+function getCrawledNews(): NewsItem[] {
+  if (!_crawledNewsCache) {
+    _crawledNewsCache = loadCrawledNews();
+  }
+  return _crawledNewsCache;
+}
 
 export function useIndustry() {
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryType>(() => {
@@ -25,19 +65,27 @@ export function useNews(selectedIndustry: IndustryType, selectedCategory: NewsCa
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
-      // 合并 MOCK 数据和后台手动录入数据
-      let allNews = [...MOCK_NEWS];
+      // 合并三层数据：爬虫数据 + MOCK数据 + 后台手动录入
+      let allNews: NewsItem[] = [];
 
-      // 读取后台手动录入的数据
+      // 1. 爬虫数据（最新、最真实）
+      const crawledNews = getCrawledNews();
+      allNews = [...crawledNews];
+
+      // 2. MOCK 数据（补充）
+      const existingIds = new Set(allNews.map(n => n.id));
+      const mockItems = MOCK_NEWS.filter(n => !existingIds.has(n.id));
+      allNews = [...allNews, ...mockItems];
+
+      // 3. 后台手动录入的数据
       try {
         const stored = localStorage.getItem(ADMIN_STORAGE_KEY);
         if (stored) {
           const adminData = JSON.parse(stored);
           if (adminData.items && Array.isArray(adminData.items)) {
-            // 合并并去重
-            const existingIds = new Set(allNews.map(n => n.id));
+            const existingIds2 = new Set(allNews.map(n => n.id));
             const adminItems = adminData.items.filter(
-              (item: NewsItem) => !existingIds.has(item.id)
+              (item: NewsItem) => !existingIds2.has(item.id)
             );
             allNews = [...adminItems, ...allNews];
           }
@@ -56,7 +104,7 @@ export function useNews(selectedIndustry: IndustryType, selectedCategory: NewsCa
         allNews = allNews.filter((item) => item.category === selectedCategory);
       }
 
-      // 按时间倒序
+      // 按时间倒序，置顶优先
       allNews.sort((a, b) => {
         if (a.isTop && !b.isTop) return -1;
         if (!a.isTop && b.isTop) return 1;
