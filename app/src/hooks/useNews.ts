@@ -3,7 +3,7 @@ import type { NewsItem, IndustryType, NewsCategory } from '@/types';
 import { MOCK_NEWS } from '@/data/mockData';
 
 const INDUSTRY_KEY = 'refra_selected_industry';
-const LAST_UPDATED_KEY = 'refra_last_updated';
+const ADMIN_STORAGE_KEY = 'refra_admin_news';
 
 export function useIndustry() {
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryType>(() => {
@@ -21,41 +21,56 @@ export function useIndustry() {
 export function useNews(selectedIndustry: IndustryType, selectedCategory: NewsCategory | 'all' = 'all') {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
 
   useEffect(() => {
     setLoading(true);
-    // Simulate network request
     const timer = setTimeout(() => {
-      let filtered = MOCK_NEWS;
+      // 合并 MOCK 数据和后台手动录入数据
+      let allNews = [...MOCK_NEWS];
 
+      // 读取后台手动录入的数据
+      try {
+        const stored = localStorage.getItem(ADMIN_STORAGE_KEY);
+        if (stored) {
+          const adminData = JSON.parse(stored);
+          if (adminData.items && Array.isArray(adminData.items)) {
+            // 合并并去重
+            const existingIds = new Set(allNews.map(n => n.id));
+            const adminItems = adminData.items.filter(
+              (item: NewsItem) => !existingIds.has(item.id)
+            );
+            allNews = [...adminItems, ...allNews];
+          }
+        }
+      } catch { /* ignore */ }
+
+      // 按行业筛选
       if (selectedIndustry !== 'all') {
-        filtered = filtered.filter(
+        allNews = allNews.filter(
           (item) => item.industries.includes(selectedIndustry) || item.industries.includes('all')
         );
       }
 
+      // 按分类筛选
       if (selectedCategory !== 'all') {
-        filtered = filtered.filter((item) => item.category === selectedCategory);
+        allNews = allNews.filter((item) => item.category === selectedCategory);
       }
 
-      setNews(filtered);
+      // 按时间倒序
+      allNews.sort((a, b) => {
+        if (a.isTop && !b.isTop) return -1;
+        if (!a.isTop && b.isTop) return 1;
+        return b.publishedAt.localeCompare(a.publishedAt);
+      });
+
+      setNews(allNews);
       setLoading(false);
-
-      const stored = localStorage.getItem(LAST_UPDATED_KEY);
-      if (stored) {
-        setLastUpdated(stored);
-      } else {
-        const now = new Date().toLocaleString('zh-CN');
-        localStorage.setItem(LAST_UPDATED_KEY, now);
-        setLastUpdated(now);
-      }
     }, 300);
 
     return () => clearTimeout(timer);
   }, [selectedIndustry, selectedCategory]);
 
-  return { news, loading, lastUpdated };
+  return { news, loading };
 }
 
 export function useSearch(query: string, news: NewsItem[]) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { NewsItem } from '@/types';
 import { CATEGORIES } from '@/data/mockData';
+import { getImageForTitle } from '@/data/imageMapping';
 
 interface NewsCardProps {
   item: NewsItem;
@@ -21,6 +22,8 @@ const categoryColorMap: Record<string, string> = {
 export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', onClick }) => {
   const cat = CATEGORIES.find((c) => c.id === item.category);
   const colorClass = categoryColorMap[item.category] || 'bg-gray-100 text-gray-700 border-gray-200';
+  // 优先使用数据中的图片，否则根据标题自动匹配
+  const imageUrl = item.imageUrl || getImageForTitle(item.title);
 
   if (variant === 'list') {
     return (
@@ -47,10 +50,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', on
         className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300"
         onClick={() => onClick?.(item)}
       >
-        {item.imageUrl && (
+        {imageUrl && (
           <div className="relative overflow-hidden h-52">
             <img
-              src={item.imageUrl}
+              src={imageUrl}
               alt={item.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
@@ -96,10 +99,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', on
         className="group cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 flex gap-3 p-3"
         onClick={() => onClick?.(item)}
       >
-        {item.imageUrl && (
+        {imageUrl && (
           <div className="w-20 h-16 flex-shrink-0 overflow-hidden rounded-lg">
             <img
-              src={item.imageUrl}
+              src={imageUrl}
               alt={item.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
@@ -125,10 +128,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', on
       className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300"
       onClick={() => onClick?.(item)}
     >
-      {item.imageUrl && (
+      {imageUrl && (
         <div className="relative overflow-hidden h-40">
           <img
-            src={item.imageUrl}
+            src={imageUrl}
             alt={item.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"

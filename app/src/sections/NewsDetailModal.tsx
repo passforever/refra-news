@@ -1,6 +1,7 @@
 import React from 'react';
 import type { NewsItem } from '@/types';
 import { CATEGORIES } from '@/data/mockData';
+import { getImageForTitle } from '@/data/imageMapping';
 
 interface NewsDetailModalProps {
   item: NewsItem | null;
@@ -10,6 +11,7 @@ interface NewsDetailModalProps {
 export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({ item, onClose }) => {
   if (!item) return null;
   const cat = CATEGORIES.find((c) => c.id === item.category);
+  const imageUrl = item.imageUrl || getImageForTitle(item.title);
 
   return (
     <div
@@ -17,9 +19,9 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({ item, onClose 
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-y-auto">
-        {item.imageUrl && (
+        {imageUrl && (
           <div className="relative overflow-hidden h-60 rounded-t-2xl">
-            <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+            <img src={imageUrl} alt={item.title} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             {item.isTop && (
               <span className="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
@@ -43,7 +45,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({ item, onClose 
             <p>{item.summary}</p>
             <br />
             <p>
-              本资讯由耐火材料资讯平台通过爬虫技术从 <strong>{item.source}</strong> 自动采集汇总。
+              本资讯由耐火材料资讯平台从 <strong>{item.source}</strong> 采集汇总。
               如需阅读全文，请点击下方链接访问原文页面。
             </p>
           </div>

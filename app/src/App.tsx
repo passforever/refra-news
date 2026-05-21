@@ -8,6 +8,7 @@ import { NewsCard } from '@/sections/NewsCard';
 import { MarketPanel } from '@/sections/MarketPanel';
 import { CrawlerSourcesPanel } from '@/sections/CrawlerSourcesPanel';
 import { NewsDetailModal } from '@/sections/NewsDetailModal';
+import { FloatingAd } from '@/sections/FloatingAd';
 import { CATEGORIES } from '@/data/mockData';
 
 // 导航项配置
@@ -394,15 +395,29 @@ export default function App() {
             <p className="text-xs text-gray-600">
               © 2026 耐火材料资讯平台 | 内容来源于公开权威网站，仅供参考
             </p>
-            <p className="text-xs text-gray-600">
-              聚焦高温窑炉行业 · 服务钢铁水泥玻璃用户
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-gray-600">
+                聚焦高温窑炉行业 · 服务钢铁水泥玻璃用户
+              </p>
+              <a
+                href="#/admin"
+                className="text-xs text-gray-500 hover:text-blue-500 transition-colors"
+              >
+                管理
+              </a>
+            </div>
           </div>
         </div>
       </footer>
 
       {/* News Detail Modal */}
       <NewsDetailModal item={selectedNews} onClose={() => setSelectedNews(null)} />
+
+      {/* Floating Ad */}
+      <FloatingAd
+        title="东豫科技 · 耐材服务专家"
+        description="钢铁行业新建及维修项目 · 专业耐火材料全流程服务 · 咨询热线：0371-XXXX-XXXX"
+      />
     </div>
   );
 }
