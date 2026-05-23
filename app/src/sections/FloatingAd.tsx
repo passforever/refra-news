@@ -1,43 +1,63 @@
 import React, { useState, useEffect } from 'react';
 
+export interface AdConfig {
+  title: string;
+  description: string;
+  linkUrl: string;
+  imageUrl: string;
+  enabled: boolean;
+}
+
+const AD_STORAGE_KEY = 'refra_floating_ad_config';
+const AD_CLOSED_KEY = 'refra_floating_ad_closed';
+const AD_SHOW_DELAY = 3000;
+const AD_REAPPEAR_HOURS = 24;
+
+const DEFAULT_AD_CONFIG: AdConfig = {
+  title: '东豫科技 · 耐材服务专家',
+  description: '钢铁行业新建及维修项目 · 专业耐火材料全流程服务 · 咨询热线：0371-XXXX-XXXX',
+  linkUrl: '#',
+  imageUrl: '',
+  enabled: true,
+};
+
+function getAdConfig(): AdConfig {
+  try {
+    const stored = localStorage.getItem(AD_STORAGE_KEY);
+    if (stored) {
+      const config = JSON.parse(stored);
+      return { ...DEFAULT_AD_CONFIG, ...config };
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_AD_CONFIG;
+}
+
 interface FloatingAdProps {
-  /** 广告图片URL */
-  imageUrl?: string;
-  /** 广告标题 */
-  title?: string;
-  /** 广告描述 */
-  description?: string;
-  /** 点击跳转链接 */
-  linkUrl?: string;
-  /** 广告位置：右下角 */
   position?: 'bottom-right' | 'bottom-left';
 }
 
-const STORAGE_KEY = 'refra_floating_ad_closed';
-const AD_SHOW_DELAY = 3000; // 3秒后显示
-const AD_REAPPEAR_HOURS = 24; // 关闭后24小时再显示
-
 export const FloatingAd: React.FC<FloatingAdProps> = ({
-  imageUrl,
-  title = '东豫科技 · 耐材服务专家',
-  description = '钢铁行业新建及维修项目 · 专业耐火材料全流程服务',
-  linkUrl = '#',
   position = 'bottom-right',
 }) => {
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [config, setConfig] = useState<AdConfig>(DEFAULT_AD_CONFIG);
 
   useEffect(() => {
+    const adConfig = getAdConfig();
+    setConfig(adConfig);
+
+    if (!adConfig.enabled) return;
+
     // 检查是否在关闭冷却期内
-    const closedAt = localStorage.getItem(STORAGE_KEY);
+    const closedAt = localStorage.getItem(AD_CLOSED_KEY);
     if (closedAt) {
       const elapsed = Date.now() - parseInt(closedAt, 10);
       if (elapsed < AD_REAPPEAR_HOURS * 60 * 60 * 1000) {
-        return; // 还在冷却期，不显示
+        return;
       }
     }
 
-    // 延迟显示
     const timer = setTimeout(() => {
       setVisible(true);
     }, AD_SHOW_DELAY);
@@ -51,11 +71,11 @@ export const FloatingAd: React.FC<FloatingAdProps> = ({
     setTimeout(() => {
       setVisible(false);
       setClosing(false);
-      localStorage.setItem(STORAGE_KEY, Date.now().toString());
+      localStorage.setItem(AD_CLOSED_KEY, Date.now().toString());
     }, 300);
   };
 
-  if (!visible) return null;
+  if (!visible || !config.enabled) return null;
 
   const positionClass = position === 'bottom-left'
     ? 'bottom-6 left-6'
@@ -79,46 +99,46 @@ export const FloatingAd: React.FC<FloatingAdProps> = ({
 
         {/* 广告内容 */}
         <a
-          href={linkUrl}
+          href={config.linkUrl || '#'}
           target="_blank"
           rel="noopener noreferrer"
           className="block group"
           onClick={(e) => {
-            if (linkUrl === '#') e.preventDefault();
+            if (!config.linkUrl || config.linkUrl === '#') e.preventDefault();
           }}
         >
           {/* 广告图片 */}
-          {imageUrl && (
+          {config.imageUrl ? (
             <div className="relative h-36 overflow-hidden">
               <img
-                src={imageUrl}
-                alt={title}
+                src={config.imageUrl}
+                alt={config.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 right-10">
-                <h4 className="text-white font-bold text-sm leading-snug">{title}</h4>
+                <h4 className="text-white font-bold text-sm leading-snug">{config.title}</h4>
               </div>
             </div>
-          )}
-
-          {/* 如果没有图片，显示纯文字版 */}
-          {!imageUrl && (
+          ) : (
+            /* 没有图片时显示纯文字版 */
             <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">🔥</span>
-                <h4 className="text-white font-bold text-sm">{title}</h4>
+                <h4 className="text-white font-bold text-sm">{config.title}</h4>
               </div>
             </div>
           )}
 
           {/* 描述 */}
           <div className="px-4 py-3">
-            <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
-            <div className="mt-2 flex items-center gap-1 text-xs text-blue-600 font-medium group-hover:text-blue-700">
-              了解详情
-              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">{config.description}</p>
+            {config.linkUrl && config.linkUrl !== '#' && (
+              <div className="mt-2 flex items-center gap-1 text-xs text-blue-600 font-medium group-hover:text-blue-700">
+                了解详情
+                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+              </div>
+            )}
           </div>
         </a>
       </div>

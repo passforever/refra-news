@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { NewsCategory, NewsItem } from '@/types';
 import { useIndustry, useNews, useSearch } from '@/hooks/useNews';
 import { MarketTicker } from '@/sections/MarketTicker';
@@ -7,7 +8,6 @@ import { CategoryTabs } from '@/sections/CategoryTabs';
 import { NewsCard } from '@/sections/NewsCard';
 import { MarketPanel } from '@/sections/MarketPanel';
 import { CrawlerSourcesPanel } from '@/sections/CrawlerSourcesPanel';
-import { NewsDetailModal } from '@/sections/NewsDetailModal';
 import { FloatingAd } from '@/sections/FloatingAd';
 import { CATEGORIES } from '@/data/mockData';
 
@@ -22,16 +22,21 @@ const NAV_ITEMS = [
 ];
 
 export default function App() {
+  const navigate = useNavigate();
   const { selectedIndustry, setSelectedIndustry } = useIndustry();
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
   const { news, loading } = useNews(selectedIndustry, selectedCategory);
   const filteredNews = useSearch(searchQuery, news);
+
+  // 点击资讯卡片 → 跳转独立详情页
+  const handleNewsClick = (item: NewsItem) => {
+    navigate(`/news/${item.id}`);
+  };
 
   // 处理导航切换
   const handleNavClick = (navId: string) => {
@@ -318,7 +323,7 @@ export default function App() {
                             key={item.id}
                             item={item}
                             variant="list"
-                            onClick={setSelectedNews}
+                            onClick={handleNewsClick}
                           />
                         ))}
                       </div>
@@ -331,7 +336,7 @@ export default function App() {
                             key={item.id}
                             item={item}
                             variant="list"
-                            onClick={setSelectedNews}
+                            onClick={handleNewsClick}
                           />
                         ))}
                       </div>
@@ -348,7 +353,7 @@ export default function App() {
                             key={item.id}
                             item={item}
                             variant="large"
-                            onClick={setSelectedNews}
+                            onClick={handleNewsClick}
                           />
                         ))}
                       </div>
@@ -362,7 +367,7 @@ export default function App() {
                             key={item.id}
                             item={item}
                             variant="medium"
-                            onClick={setSelectedNews}
+                            onClick={handleNewsClick}
                           />
                         ))}
                       </div>
@@ -482,14 +487,8 @@ export default function App() {
         </div>
       </footer>
 
-      {/* News Detail Modal */}
-      <NewsDetailModal item={selectedNews} onClose={() => setSelectedNews(null)} />
-
       {/* Floating Ad */}
-      <FloatingAd
-        title="东豫科技 · 耐材服务专家"
-        description="钢铁行业新建及维修项目 · 专业耐火材料全流程服务 · 咨询热线：0371-XXXX-XXXX"
-      />
+      <FloatingAd />
     </div>
   );
 }

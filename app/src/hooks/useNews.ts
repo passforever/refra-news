@@ -3,6 +3,7 @@ import type { NewsItem, IndustryType, NewsCategory } from '@/types';
 import { MOCK_NEWS } from '@/data/mockData';
 // 导入爬虫数据（Vite 支持直接 import JSON）
 import taikeNewsData from '@/data/taikeNews.json';
+import wechatNewsData from '@/data/wechatNews.json';
 
 const INDUSTRY_KEY = 'refra_selected_industry';
 const ADMIN_STORAGE_KEY = 'refra_admin_news';
@@ -32,6 +33,24 @@ function loadCrawledNews(): NewsItem[] {
   // 如果未来有更多爬虫数据源，在此处添加
   // import otherNewsData from '@/data/otherNews.json';
   // ...
+
+  // 微信公众号爬虫数据
+  if (wechatNewsData && wechatNewsData.items && Array.isArray(wechatNewsData.items)) {
+    for (const item of wechatNewsData.items) {
+      items.push({
+        id: item.id || `wx_${Math.random().toString(36).slice(2, 10)}`,
+        title: item.title || '',
+        summary: item.summary || item.title || '',
+        source: item.source || '微信公众号',
+        sourceUrl: item.sourceUrl || '#',
+        category: (item.category || 'industry-news') as NewsCategory,
+        publishedAt: item.publishedAt || new Date().toISOString().split('T')[0],
+        tags: item.tags || [],
+        industries: (item.industries || ['all', 'steel']) as IndustryType[],
+        isTop: item.isTop || false,
+      });
+    }
+  }
 
   return items;
 }

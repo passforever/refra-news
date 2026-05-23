@@ -5,20 +5,42 @@ import { INDUSTRIES } from '@/data/mockData';
 import { getIndustryImageURI } from '@/data/industryVisuals';
 
 const ADMIN_STORAGE_KEY = 'refra_admin_news';
+const AD_STORAGE_KEY = 'refra_floating_ad_config';
 const ADMIN_PASSWORD = 'dy2026'; // 简单密码保护
 
 // 行业选项（排除 all）
 const INDUSTRY_OPTIONS = INDUSTRIES.filter(i => i.id !== 'all');
 
+interface AdConfig {
+  title: string;
+  description: string;
+  linkUrl: string;
+  imageUrl: string;
+  enabled: boolean;
+}
+
+const DEFAULT_AD_CONFIG: AdConfig = {
+  title: '东豫科技 · 耐材服务专家',
+  description: '钢铁行业新建及维修项目 · 专业耐火材料全流程服务 · 咨询热线：0371-XXXX-XXXX',
+  linkUrl: '#',
+  imageUrl: '',
+  enabled: true,
+};
+
 export const AdminPanel: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  const [mainTab, setMainTab] = useState<'news' | 'ad'>('news');
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [editingItem, setEditingItem] = useState<NewsItem | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [__activeTab, _setActiveTab] = useState<'list' | 'create'>('list');
+
+  // 广告配置
+  const [adConfig, setAdConfig] = useState<AdConfig>(DEFAULT_AD_CONFIG);
+  const [adSaved, setAdSaved] = useState(false);
 
   // 表单状态
   const [form, setForm] = useState({
@@ -48,6 +70,17 @@ export const AdminPanel: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // 加载广告配置
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(AD_STORAGE_KEY);
+      if (stored) {
+        const config = JSON.parse(stored);
+        setAdConfig({ ...DEFAULT_AD_CONFIG, ...config });
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   // 保存数据
   const saveData = (items: NewsItem[]) => {
@@ -260,6 +293,13 @@ export const AdminPanel: React.FC = () => {
     return CATEGORIES.find(c => c.id === id)?.name || id;
   };
 
+  // 保存广告配置
+  const handleAdSave = () => {
+    localStorage.setItem(AD_STORAGE_KEY, JSON.stringify(adConfig));
+    setAdSaved(true);
+    setTimeout(() => setAdSaved(false), 2000);
+  };
+
   // ===== 管理界面 =====
   return (
     <div className="min-h-screen bg-gray-50">
@@ -287,9 +327,34 @@ export const AdminPanel: React.FC = () => {
             </button>
           </div>
         </div>
+        {/* Tab切换 */}
+        <div className="max-w-6xl mx-auto px-4 flex border-t border-gray-100">
+          <button
+            onClick={() => setMainTab('news')}
+            className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              mainTab === 'news'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            📰 资讯管理
+          </button>
+          <button
+            onClick={() => setMainTab('ad')}
+            className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              mainTab === 'ad'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            📢 广告管理
+          </button>
+        </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
+        {mainTab === 'news' && (
+        <>
         {/* 统计卡片 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 border border-gray-100">
@@ -602,6 +667,129 @@ export const AdminPanel: React.FC = () => {
             </div>
           )}
         </div>
+        </>
+        )}
+
+        {mainTab === 'ad' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-gray-900">📢 浮动广告配置</h2>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={adConfig.enabled}
+                    onChange={(e) => setAdConfig({ ...adConfig, enabled: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded"
+                  />
+                  <span className="text-sm text-gray-700">启用广告</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">广告标题</label>
+                <input
+                  type="text"
+                  value={adConfig.title}
+                  onChange={(e) => setAdConfig({ ...adConfig, title: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="如：东豫科技 · 耐材服务专家"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">广告描述</label>
+                <textarea
+                  value={adConfig.description}
+                  onChange={(e) => setAdConfig({ ...adConfig, description: e.target.value })}
+                  rows={2}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="如：钢铁行业新建及维修项目 · 专业耐火材料全流程服务"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">跳转链接</label>
+                <input
+                  type="url"
+                  value={adConfig.linkUrl}
+                  onChange={(e) => setAdConfig({ ...adConfig, linkUrl: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://... （留空则不跳转）"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">广告图片URL</label>
+                <input
+                  type="url"
+                  value={adConfig.imageUrl}
+                  onChange={(e) => setAdConfig({ ...adConfig, imageUrl: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://... （留空则显示默认蓝色背景）"
+                />
+                {adConfig.imageUrl && (
+                  <div className="mt-2 w-48 h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img src={adConfig.imageUrl} alt="预览" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-3">
+              <button
+                onClick={handleAdSave}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+              >
+                {adSaved ? '✓ 已保存' : '保存广告配置'}
+              </button>
+              <button
+                onClick={() => {
+                  setAdConfig(DEFAULT_AD_CONFIG);
+                  localStorage.removeItem(AD_STORAGE_KEY);
+                  setAdSaved(true);
+                  setTimeout(() => setAdSaved(false), 2000);
+                }}
+                className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                恢复默认
+              </button>
+            </div>
+          </div>
+
+          {/* 预览 */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 className="text-sm font-bold text-gray-700 mb-3">📱 广告预览（前台展示效果）</h3>
+            <div className="relative bg-gray-50 rounded-xl p-4 flex justify-end">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden w-64">
+                <button className="absolute -top-1 -right-1 w-6 h-6 flex items-center justify-center bg-black/40 text-white rounded-full text-xs">✕</button>
+                {adConfig.imageUrl ? (
+                  <div className="relative h-28 overflow-hidden">
+                    <img src={adConfig.imageUrl} alt="" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-2 left-2 right-8">
+                      <p className="text-white font-bold text-xs">{adConfig.title}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-lg">🔥</span>
+                      <p className="text-white font-bold text-xs">{adConfig.title}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="p-3">
+                  <p className="text-xs text-gray-500 leading-relaxed">{adConfig.description}</p>
+                  {adConfig.linkUrl && adConfig.linkUrl !== '#' && (
+                    <p className="mt-1.5 text-xs text-blue-600 font-medium">了解详情 →</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
       </div>
     </div>
   );

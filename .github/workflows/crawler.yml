@@ -5,8 +5,8 @@ on:
     branches:
       - master
   schedule:
-    # 每天北京时间 02:00（UTC 18:00）自动执行
-    - cron: '0 18 * * *'
+    # 每天北京时间 07:00（UTC 23:00）自动执行
+    - cron: '0 23 * * *'
   workflow_dispatch:
     # 支持手动触发
 
@@ -41,11 +41,17 @@ jobs:
           python app/crawler/taike_crawler.py
         continue-on-error: true
 
+      - name: Run WeChat crawler
+        run: |
+          python app/crawler/wechat_crawler.py
+        continue-on-error: true
+
       - name: Verify crawled data
         run: |
           echo "=== Checking crawled data files ==="
           ls -la app/src/data/taikeNews.json 2>/dev/null && echo "✓ taikeNews.json exists" || echo "✗ taikeNews.json missing"
           ls -la app/src/data/newsData.json 2>/dev/null && echo "✓ newsData.json exists" || echo "✗ newsData.json missing"
+          ls -la app/src/data/wechatNews.json 2>/dev/null && echo "✓ wechatNews.json exists" || echo "✗ wechatNews.json missing"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
