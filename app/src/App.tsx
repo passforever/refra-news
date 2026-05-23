@@ -28,7 +28,10 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
+    const saved = localStorage.getItem('refra_view_mode');
+    return saved === 'list' ? 'list' : 'card';
+  });
 
   const { news, loading } = useNews(selectedIndustry, selectedCategory);
   const filteredNews = useSearch(searchQuery, news);
@@ -245,7 +248,7 @@ export default function App() {
               {/* 视图切换 */}
               <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
                 <button
-                  onClick={() => setViewMode('card')}
+                  onClick={() => { setViewMode('card'); localStorage.setItem('refra_view_mode', 'card'); }}
                   className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                     viewMode === 'card'
                       ? 'bg-white text-blue-600 shadow-sm'
@@ -262,7 +265,7 @@ export default function App() {
                   卡片
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => { setViewMode('list'); localStorage.setItem('refra_view_mode', 'list'); }}
                   className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                     viewMode === 'list'
                       ? 'bg-white text-blue-600 shadow-sm'
@@ -318,11 +321,12 @@ export default function App() {
                     {/* 置顶资讯（列表模式） */}
                     {featuredNews.length > 0 && (
                       <div className="border-b border-gray-100">
-                        {featuredNews.map((item) => (
+                        {featuredNews.map((item, idx) => (
                           <NewsCard
                             key={item.id}
                             item={item}
                             variant="list"
+                            index={idx}
                             onClick={handleNewsClick}
                           />
                         ))}
@@ -331,11 +335,12 @@ export default function App() {
                     {/* 普通资讯（列表模式） */}
                     {listNews.length > 0 && (
                       <div>
-                        {listNews.map((item) => (
+                        {listNews.map((item, idx) => (
                           <NewsCard
                             key={item.id}
                             item={item}
                             variant="list"
+                            index={idx}
                             onClick={handleNewsClick}
                           />
                         ))}

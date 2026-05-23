@@ -7,6 +7,7 @@ interface NewsCardProps {
   item: NewsItem;
   variant?: 'large' | 'medium' | 'small' | 'list';
   onClick?: (item: NewsItem) => void;
+  index?: number;
 }
 
 const categoryColorMap: Record<string, string> = {
@@ -19,27 +20,28 @@ const categoryColorMap: Record<string, string> = {
   exhibition: 'bg-orange-100 text-orange-700 border-orange-200',
 };
 
-export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', onClick }) => {
+export const NewsCard: React.FC<NewsCardProps> = ({ item, variant = 'medium', onClick, index }) => {
   const cat = CATEGORIES.find((c) => c.id === item.category);
   const colorClass = categoryColorMap[item.category] || 'bg-gray-100 text-gray-700 border-gray-200';
   // 优先使用数据中的图片，否则根据标题生成专业行业视觉
   const imageUrl = item.imageUrl || getIndustryImageURI(item.title);
 
   if (variant === 'list') {
+    const isEven = index !== undefined && index % 2 === 0;
     return (
       <article
-        className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-blue-50/40 rounded-lg px-3 transition-colors"
+        className={`flex items-center gap-3 sm:gap-4 py-3.5 px-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-blue-50/60 transition-colors ${isEven ? 'bg-white' : 'bg-gray-50/60'}`}
         onClick={() => onClick?.(item)}
       >
-        <span className={`text-xs font-medium px-2 py-0.5 rounded border whitespace-nowrap ${colorClass}`}>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded border whitespace-nowrap shrink-0 ${colorClass}`}>
           {cat?.name}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-800 line-clamp-1 hover:text-blue-600 transition-colors">
+          <p className="text-sm font-medium text-gray-800 line-clamp-2 sm:line-clamp-1 hover:text-blue-600 transition-colors leading-snug">
             {item.title}
           </p>
         </div>
-        <span className="text-xs text-gray-400 whitespace-nowrap">{item.publishedAt}</span>
+        <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">{item.publishedAt}</span>
       </article>
     );
   }
