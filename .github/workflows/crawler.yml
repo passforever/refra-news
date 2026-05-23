@@ -16,6 +16,7 @@ permissions:
 jobs:
   crawl-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     name: 爬取资讯 & 构建部署
 
     steps:
@@ -32,16 +33,19 @@ jobs:
           pip install -r app/crawler/requirements.txt
 
       - name: Run generic crawler
+        timeout-minutes: 3
         run: |
           python app/crawler/crawler.py
         continue-on-error: true
 
       - name: Run Taike Steel crawler
+        timeout-minutes: 3
         run: |
           python app/crawler/taike_crawler.py
         continue-on-error: true
 
       - name: Run WeChat crawler
+        timeout-minutes: 3
         run: |
           python app/crawler/wechat_crawler.py
         continue-on-error: true
