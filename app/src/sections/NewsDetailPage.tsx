@@ -38,7 +38,7 @@ function findNewsById(id: string): NewsItem | null {
         publishedAt: crawled.publishedAt || '',
         tags: crawled.tags || [],
         industries: (crawled.industries || ['all', 'steel']) as IndustryType[],
-        isTop: crawled.isTop || false,
+        isTop: (crawled as any).isTop || false,
       };
     }
   }
@@ -57,7 +57,7 @@ function findNewsById(id: string): NewsItem | null {
         publishedAt: wxItem.publishedAt || '',
         tags: wxItem.tags || [],
         industries: (wxItem.industries || ['all', 'steel']) as IndustryType[],
-        isTop: wxItem.isTop || false,
+        isTop: (wxItem as any).isTop || false,
       };
     }
   }
@@ -110,7 +110,7 @@ function getRelatedNews(currentId: string, count: number = 3): NewsItem[] {
         publishedAt: item.publishedAt || '',
         tags: item.tags || [],
         industries: (item.industries || ['all', 'steel']) as IndustryType[],
-        isTop: item.isTop || false,
+        isTop: (item as any).isTop || false,
       });
     }
   }
@@ -126,7 +126,7 @@ function getRelatedNews(currentId: string, count: number = 3): NewsItem[] {
         publishedAt: item.publishedAt || '',
         tags: item.tags || [],
         industries: (item.industries || ['all', 'steel']) as IndustryType[],
-        isTop: item.isTop || false,
+        isTop: (item as any).isTop || false,
       });
     }
   }
@@ -183,7 +183,6 @@ export const NewsDetailPage: React.FC = () => {
   }
 
   const cat = CATEGORIES.find((c) => c.id === item.category);
-  const colorClass = categoryColorMap[item.category] || 'bg-gray-100 text-gray-700 border-gray-200';
   const imageUrl = item.imageUrl || getImageForTitle(item.title);
   const content = generateContent(item);
 

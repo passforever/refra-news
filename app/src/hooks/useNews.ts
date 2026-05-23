@@ -25,7 +25,7 @@ function loadCrawledNews(): NewsItem[] {
         publishedAt: item.publishedAt || new Date().toISOString().split('T')[0],
         tags: item.tags || [],
         industries: (item.industries || ['all', 'steel']) as IndustryType[],
-        isTop: item.isTop || false,
+        isTop: (item as any).isTop || false,
       });
     }
   }
@@ -47,7 +47,7 @@ function loadCrawledNews(): NewsItem[] {
         publishedAt: item.publishedAt || new Date().toISOString().split('T')[0],
         tags: item.tags || [],
         industries: (item.industries || ['all', 'steel']) as IndustryType[],
-        isTop: item.isTop || false,
+        isTop: (item as any).isTop || false,
       });
     }
   }
