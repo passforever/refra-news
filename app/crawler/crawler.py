@@ -15,6 +15,7 @@
 
 import json
 import os
+import re
 import time
 import uuid
 import hashlib
@@ -30,6 +31,79 @@ try:
 except ImportError:
     HAS_DEPS = False
     print("[WARN] requests / beautifulsoup4 未安装，将使用演示模式输出示例数据结构")
+
+
+# ─────────────────────────────────────────────
+# 耐材关联度关键词
+# ─────────────────────────────────────────────
+REFRACTORY_CORE = [
+    "耐火材料", "耐材", "镁砂", "镁碳砖", "铝矾土", "刚玉", "莫来石",
+    "碳化硅", "浇注料", "高铝砖", "硅砖", "AZS", "锆", "炉衬",
+    "窑衬", "衬里", "铁沟", "耐火砖", "不定形耐火", "隔热砖",
+    "白刚玉", "棕刚玉", "电熔镁", "烧结镁", "镁铬砖",
+]
+REFRACTORY_SECONDARY = [
+    "高炉", "转炉", "电炉", "热风炉", "焦炉", "水泥窑", "玻璃窑",
+    "炉衬寿命", "砌筑", "喷补", "窑炉", "保温材料", "炉窑大修",
+]
+
+LOW_QUALITY_PATTERNS = [
+    r"招聘", r"求职", r"元旦快乐", r"春节快乐", r"节日祝福",
+    r"转发.*抽奖", r"扫码.*关注",
+]
+
+
+def score_relevance(title: str, summary: str = "") -> int:
+    text = title + " " + summary
+    score = 0
+    for kw in REFRACTORY_CORE:
+        if kw in text:
+            score += 10
+        if kw in title:
+            score += 5
+    for kw in REFRACTORY_SECONDARY:
+        if kw in text:
+            score += 4
+    return min(score, 100)
+
+
+def is_low_quality(title: str) -> bool:
+    for p in LOW_QUALITY_PATTERNS:
+        if re.search(p, title):
+            return True
+    return len(title.strip()) < 8
+
+
+def title_hash(title: str) -> str:
+    simplified = re.sub(r"[^\u4e00-\u9fa5a-zA-Z0-9]", "", title)
+    return hashlib.md5(simplified.encode()).hexdigest()[:8]
+
+
+def build_rich_summary(title: str, source_name: str, category: str) -> str:
+    """根据标题关键词生成更丰富的摘要描述"""
+    # 提取标题中的核心信息
+    clean = re.sub(r'^[【\[][^】\]]+[】\]]', '', title).strip()
+
+    # 按关键词补充上下文
+    ctx_map = [
+        (["耐火材料", "耐材"], "耐火材料行业动态："),
+        (["镁砂", "铝矾土", "刚玉"], "耐火原料市场："),
+        (["高炉", "转炉", "电炉", "热风炉"], "冶金炉窑用耐火材料相关："),
+        (["水泥窑", "玻璃窑"], "窑炉用耐材相关："),
+        (["价格", "行情", "报价"], "市场行情："),
+        (["政策", "标准", "法规"], "行业政策："),
+        (["技术", "研发", "创新"], "技术动态："),
+    ]
+    prefix = ""
+    for kws, label in ctx_map:
+        if any(kw in title for kw in kws):
+            prefix = label
+            break
+
+    summary = f"{prefix}{clean}"
+    if source_name and source_name not in summary:
+        summary += f"（来源：{source_name}）"
+    return summary[:200]
 
 
 # ─────────────────────────────────────────────
@@ -144,11 +218,17 @@ def crawl_source(source: dict, session: "requests.Session") -> list[dict]:
                 if not title or len(title) < 5:
                     continue
 
+                if is_low_quality(title):
+                    continue
+
                 item_id = hashlib.md5(title.encode()).hexdigest()[:12]
+                summary = build_rich_summary(title, source["name"], source["category"])
+                relevance = score_relevance(title, summary)
+
                 items.append({
                     "id": item_id,
                     "title": title,
-                    "summary": title,  # 摘要默认用标题，可进一步爬取详情页
+                    "summary": summary,
                     "source": source["name"],
                     "sourceUrl": href,
                     "category": source["category"],
@@ -156,6 +236,7 @@ def crawl_source(source: dict, session: "requests.Session") -> list[dict]:
                     "tags": [],
                     "industries": source["industries"],
                     "isTop": False,
+                    "relevanceScore": relevance,
                 })
             except Exception as e:
                 print(f"  [SKIP] 解析条目失败: {e}")
@@ -173,13 +254,29 @@ def crawl_source(source: dict, session: "requests.Session") -> list[dict]:
 # ─────────────────────────────────────────────
 def deduplicate(old_items: list[dict], new_items: list[dict]) -> list[dict]:
     seen_ids = {item["id"] for item in old_items}
-    unique_new = [item for item in new_items if item["id"] not in seen_ids]
+    seen_title_hashes = {title_hash(item["title"]) for item in old_items}
+
+    unique_new = []
+    for item in new_items:
+        if item["id"] in seen_ids:
+            continue
+        th = title_hash(item["title"])
+        if th in seen_title_hashes:
+            continue
+        seen_ids.add(item["id"])
+        seen_title_hashes.add(th)
+        unique_new.append(item)
+
     # 保留旧数据最近 90 天
     cutoff = (datetime.today() - timedelta(days=90)).strftime("%Y-%m-%d")
     old_filtered = [item for item in old_items if item.get("publishedAt", "9999") >= cutoff]
     all_items = unique_new + old_filtered
-    # 按时间倒序
-    all_items.sort(key=lambda x: x.get("publishedAt", ""), reverse=True)
+
+    # 按耐材关联度 + 时间排序
+    all_items.sort(key=lambda x: (
+        x.get("relevanceScore", 0),
+        x.get("publishedAt", ""),
+    ), reverse=True)
     return all_items[:500]  # 最多保留 500 条
 
 

@@ -281,7 +281,7 @@ export const AdminPanel: React.FC = () => {
             </button>
           </div>
           <p className="text-xs text-gray-400 text-center mt-4">
-            提示：初始密码 dy2026
+            请联系管理员获取登录密码
           </p>
         </div>
       </div>
