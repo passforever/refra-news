@@ -8,6 +8,9 @@ import wechatNewsData from '@/data/wechatNews.json';
 const INDUSTRY_KEY = 'refra_selected_industry';
 const ADMIN_STORAGE_KEY = 'refra_admin_news';
 
+// 每个来源最多保留条数（防止单一来源霸屏）
+const MAX_PER_SOURCE = 10;
+
 // 解析爬虫数据：将 JSON 中的 items 转换为 NewsItem 格式
 function loadCrawledNews(): NewsItem[] {
   const items: NewsItem[] = [];
@@ -26,13 +29,10 @@ function loadCrawledNews(): NewsItem[] {
         tags: item.tags || [],
         industries: (item.industries || ['all', 'steel']) as IndustryType[],
         isTop: (item as any).isTop || false,
+        relevanceScore: (item as any).relevanceScore || 0,
       });
     }
   }
-
-  // 如果未来有更多爬虫数据源，在此处添加
-  // import otherNewsData from '@/data/otherNews.json';
-  // ...
 
   // 微信公众号爬虫数据
   if (wechatNewsData && wechatNewsData.items && Array.isArray(wechatNewsData.items)) {
@@ -48,6 +48,7 @@ function loadCrawledNews(): NewsItem[] {
         tags: item.tags || [],
         industries: (item.industries || ['all', 'steel']) as IndustryType[],
         isTop: (item as any).isTop || false,
+        relevanceScore: (item as any).relevanceScore || 0,
       });
     }
   }
@@ -62,6 +63,34 @@ function getCrawledNews(): NewsItem[] {
     _crawledNewsCache = loadCrawledNews();
   }
   return _crawledNewsCache;
+}
+
+/**
+ * 按来源均衡选择：每个来源最多保留 MAX_PER_SOURCE 条，
+ * 优先保留关联度更高的条目
+ */
+function balanceBySource(items: NewsItem[]): NewsItem[] {
+  const sourceGroups: Record<string, NewsItem[]> = {};
+
+  for (const item of items) {
+    const src = item.source || '未知';
+    if (!sourceGroups[src]) sourceGroups[src] = [];
+    sourceGroups[src].push(item);
+  }
+
+  const result: NewsItem[] = [];
+  for (const [, group] of Object.entries(sourceGroups)) {
+    // 组内按关联度排序，取前 MAX_PER_SOURCE 条
+    group.sort((a, b) => {
+      const ra = a.relevanceScore || 0;
+      const rb = b.relevanceScore || 0;
+      if (ra !== rb) return rb - ra;
+      return b.publishedAt.localeCompare(a.publishedAt);
+    });
+    result.push(...group.slice(0, MAX_PER_SOURCE));
+  }
+
+  return result;
 }
 
 export function useIndustry() {
@@ -84,14 +113,14 @@ export function useNews(selectedIndustry: IndustryType, selectedCategory: NewsCa
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
-      // 合并三层数据：爬虫数据 + MOCK数据 + 后台手动录入
       let allNews: NewsItem[] = [];
 
-      // 1. 爬虫数据（最新、最真实）
+      // 1. 爬虫数据（来源均衡限制后）
       const crawledNews = getCrawledNews();
-      allNews = [...crawledNews];
+      const balancedCrawled = balanceBySource(crawledNews);
+      allNews = [...balancedCrawled];
 
-      // 2. MOCK 数据（补充）
+      // 2. MOCK 数据（知识库等，补充）
       const existingIds = new Set(allNews.map(n => n.id));
       const mockItems = MOCK_NEWS.filter(n => !existingIds.has(n.id));
       allNews = [...allNews, ...mockItems];
@@ -123,10 +152,16 @@ export function useNews(selectedIndustry: IndustryType, selectedCategory: NewsCa
         allNews = allNews.filter((item) => item.category === selectedCategory);
       }
 
-      // 按时间倒序，置顶优先
+      // 排序：置顶 > 关联度 > 时间
       allNews.sort((a, b) => {
+        // 1) 置顶优先
         if (a.isTop && !b.isTop) return -1;
         if (!a.isTop && b.isTop) return 1;
+        // 2) 耐材关联度（高→低）
+        const ra = a.relevanceScore || 0;
+        const rb = b.relevanceScore || 0;
+        if (ra !== rb) return rb - ra;
+        // 3) 时间倒序
         return b.publishedAt.localeCompare(a.publishedAt);
       });
 

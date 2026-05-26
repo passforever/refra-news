@@ -11,6 +11,7 @@ export interface NewsItem {
   tags: string[];
   industries: IndustryType[];
   isTop?: boolean;
+  relevanceScore?: number;
 }
 
 export type NewsCategory =

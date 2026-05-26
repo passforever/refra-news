@@ -88,12 +88,44 @@ INDUSTRY_KEYWORDS = {
     "cokeoven": ["焦炉", "焦炭"],
 }
 
-# 耐火材料相关关键词
-REFRACTORY_KEYWORDS = [
-    "耐火", "耐材", "镁砂", "镁碳砖", "铝矾土", "刚玉", "碳化硅",
-    "浇注料", "高铝砖", "硅砖", "AZS", "锆", "炉衬", "窑衬",
-    "衬里", "铁沟", "炉窑", "窑炉", "保温", "隔热",
+# 耐材核心关联词（与 crawler.py 对齐）
+REFRACTORY_CORE = [
+    "耐火材料", "耐材", "镁砂", "镁碳砖", "铝矾土", "刚玉", "莫来石",
+    "碳化硅", "浇注料", "高铝砖", "硅砖", "AZS", "锆", "炉衬",
+    "窑衬", "衬里", "铁沟", "耐火砖", "不定形耐火", "隔热砖",
+    "白刚玉", "棕刚玉", "电熔镁", "烧结镁", "镁铬砖",
 ]
+REFRACTORY_SECONDARY = [
+    "高炉", "转炉", "电炉", "热风炉", "焦炉", "水泥窑", "玻璃窑",
+    "炉衬寿命", "砌筑", "喷补", "窑炉", "保温材料",
+]
+
+LOW_QUALITY_PATTERNS = [
+    r"招聘", r"求职", r"元旦快乐", r"春节快乐", r"节日祝福",
+    r"转发.*抽奖", r"扫码.*关注",
+]
+
+
+def score_relevance(title: str, summary: str = "") -> int:
+    """计算耐材关联度分数"""
+    text = title + " " + summary
+    score = 0
+    for kw in REFRACTORY_CORE:
+        if kw in text:
+            score += 10
+        if kw in title:
+            score += 5
+    for kw in REFRACTORY_SECONDARY:
+        if kw in text:
+            score += 4
+    return min(score, 100)
+
+
+def is_low_quality(title: str) -> bool:
+    for p in LOW_QUALITY_PATTERNS:
+        if re.search(p, title):
+            return True
+    return len(title.strip()) < 8
 
 
 def classify_category(title: str) -> str:
@@ -128,10 +160,27 @@ def extract_tags(title: str) -> list:
 
 
 def generate_summary(title: str) -> str:
+    """生成有信息量的摘要（不是简单地复制标题）"""
     clean = re.sub(r'^[【\[][^】\]]+[】\]]', '', title).strip()
-    if len(clean) > 60:
-        return clean[:57] + "..."
-    return clean
+
+    ctx_map = [
+        (["镁砂", "铝矾土", "刚玉", "电熔镁"], "耐火原料"),
+        (["耐火材料", "耐材"], "耐材行业"),
+        (["高炉", "转炉", "电炉", "热风炉", "连铸"], "钢铁冶炼"),
+        (["价格", "行情", "报价", "涨跌"], "市场行情"),
+        (["政策", "标准", "法规", "产能置换"], "政策动态"),
+        (["技术", "研发", "创新", "突破"], "技术进展"),
+        (["营收", "净利润", "利润", "业绩", "季报", "年报"], "企业经营"),
+        (["投产", "项目", "签约", "开工"], "项目动态"),
+    ]
+    prefix = ""
+    for kws, label in ctx_map:
+        if any(kw in clean for kw in kws):
+            prefix = f"【{label}】"
+            break
+
+    summary = f"{prefix}{clean}" if prefix else clean
+    return summary[:120]
 
 
 def parse_relative_date(text: str) -> str:
@@ -216,13 +265,19 @@ def crawl_taike(session: "requests.Session", max_pages: int = TAIKE_PAGES) -> li
                     category = classify_category(title)
                     industries = classify_industries(title)
                     tags = extract_tags(title)
+                    summary = generate_summary(title)
+                    relevance = score_relevance(title, summary)
+
+                    # 过滤低质量内容
+                    if is_low_quality(title):
+                        continue
 
                     item_id = hashlib.md5(title.encode()).hexdigest()[:12]
 
                     all_items.append({
                         "id": f"tk_{item_id}",
                         "title": title,
-                        "summary": generate_summary(title),
+                        "summary": summary,
                         "source": "泰科钢铁",
                         "sourceUrl": link,
                         "category": category,
@@ -230,6 +285,7 @@ def crawl_taike(session: "requests.Session", max_pages: int = TAIKE_PAGES) -> li
                         "tags": tags,
                         "industries": industries,
                         "isTop": False,
+                        "relevanceScore": relevance,
                     })
 
                 except Exception as e:
@@ -254,103 +310,34 @@ def crawl_taike(session: "requests.Session", max_pages: int = TAIKE_PAGES) -> li
 
 
 def generate_demo_data() -> list:
-    """生成泰科钢铁演示数据（当爬取失败时使用）"""
+    """生成极少量演示数据（仅在爬取完全失败时使用）"""
+    today = datetime.today()
     return [
         {
             "id": "tk_demo_001",
             "title": "工信部：2年后不同企业之间炼铁、炼钢产能不得实施产能置换！",
-            "summary": "工信部新规：不同企业集团之间炼铁、炼钢产能不得实施产能置换，将影响钢铁行业产能格局",
+            "summary": "【政策动态】工信部发布重磅产能置换新规，将深刻影响钢铁行业格局及高炉用耐材需求",
             "source": "泰科钢铁",
             "sourceUrl": "https://www.jintiankansha.com/column/ZvIjkAtkpY",
             "category": "policy",
-            "publishedAt": datetime.today().strftime("%Y-%m-%d"),
+            "publishedAt": today.strftime("%Y-%m-%d"),
             "tags": ["产能置换", "炼铁", "炼钢", "工信部"],
             "industries": ["all", "steel"],
             "isTop": True,
+            "relevanceScore": 28,
         },
         {
             "id": "tk_demo_002",
-            "title": "河钢集团：2026年一季度营收1029亿，净利润8.67亿！",
-            "summary": "河钢集团公布一季度业绩，营收1029亿元，高炉生产稳中有升",
+            "title": "高炉炉缸用微孔炭砖技术新突破：寿命延长至20年",
+            "summary": "【技术进展】新型微孔炭砖抗铁水侵蚀性能显著提升，有望将高炉炉役寿命延长至20年",
             "source": "泰科钢铁",
             "sourceUrl": "https://www.jintiankansha.com/column/ZvIjkAtkpY",
-            "category": "enterprise",
-            "publishedAt": (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d"),
-            "tags": ["河钢集团", "营收", "钢铁", "高炉"],
-            "industries": ["all", "steel"],
-            "isTop": False,
-        },
-        {
-            "id": "tk_demo_003",
-            "title": "《2026年国内炼铁高炉统计》出炉",
-            "summary": "最新统计数据显示国内炼铁高炉数量及分布情况，对耐火材料需求具有重要参考价值",
-            "source": "泰科钢铁",
-            "sourceUrl": "https://www.jintiankansha.com/column/ZvIjkAtkpY",
-            "category": "market",
-            "publishedAt": (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d"),
-            "tags": ["高炉统计", "炼铁", "钢铁"],
+            "category": "technology",
+            "publishedAt": (today - timedelta(days=1)).strftime("%Y-%m-%d"),
+            "tags": ["高炉", "炉缸", "微孔炭砖", "耐火材料"],
             "industries": ["all", "steel", "hotblast"],
             "isTop": False,
-        },
-        {
-            "id": "tk_demo_004",
-            "title": "1680mm热轧生产线建设，加速推进！",
-            "summary": "国内新建1680mm热轧生产线项目加速推进，带动轧钢用耐火材料需求",
-            "source": "泰科钢铁",
-            "sourceUrl": "https://www.jintiankansha.com/column/ZvIjkAtkpY",
-            "category": "industry-news",
-            "publishedAt": (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d"),
-            "tags": ["热轧", "生产线", "钢铁"],
-            "industries": ["all", "steel"],
-            "isTop": False,
-        },
-        {
-            "id": "tk_demo_005",
-            "title": "酒钢集团：2026年一季度，净利润大增195%",
-            "summary": "酒钢集团一季度净利润同比增长195%，钢铁板块盈利能力显著提升",
-            "source": "泰科钢铁",
-            "sourceUrl": "https://www.jintiankansha.com/column/ZvIjkAtkpY",
-            "category": "enterprise",
-            "publishedAt": (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d"),
-            "tags": ["酒钢", "净利润", "钢铁"],
-            "industries": ["all", "steel"],
-            "isTop": False,
-        },
-        {
-            "id": "tk_demo_006",
-            "title": "沙钢集团总裁龚盛调研沙钢永兴公司",
-            "summary": "沙钢集团领导调研下属企业生产运营情况，关注高炉运行效率",
-            "source": "泰科钢铁",
-            "sourceUrl": "https://www.jintiankansha.com/column/ZvIjkAtkpY",
-            "category": "enterprise",
-            "publishedAt": (datetime.today() - timedelta(days=3)).strftime("%Y-%m-%d"),
-            "tags": ["沙钢", "调研", "高炉"],
-            "industries": ["all", "steel"],
-            "isTop": False,
-        },
-        {
-            "id": "tk_demo_007",
-            "title": "山东钢铁：2026年公司计划生产生铁1617万吨、粗钢1843万吨",
-            "summary": "山东钢铁公布年度生产计划，生铁和粗钢产量目标明确，耐材采购需求稳定",
-            "source": "泰科钢铁",
-            "sourceUrl": "https://www.jintiankansha.com/column/ZvIjkAtkpY",
-            "category": "market",
-            "publishedAt": (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d"),
-            "tags": ["山东钢铁", "生铁", "粗钢", "产量"],
-            "industries": ["all", "steel"],
-            "isTop": False,
-        },
-        {
-            "id": "tk_demo_008",
-            "title": "首钢集团：2026年一季度营收576亿，净利润17.53亿！",
-            "summary": "首钢集团一季度业绩亮眼，营收576亿元，高炉利用系数居行业前列",
-            "source": "泰科钢铁",
-            "sourceUrl": "https://www.jintiankansha.com/column/ZvIjkAtkpY",
-            "category": "enterprise",
-            "publishedAt": (datetime.today() - timedelta(days=4)).strftime("%Y-%m-%d"),
-            "tags": ["首钢", "营收", "高炉"],
-            "industries": ["all", "steel"],
-            "isTop": False,
+            "relevanceScore": 58,
         },
     ]
 
@@ -372,8 +359,11 @@ def main(test_mode: bool = False):
         print("[INFO] 未获取到数据，使用演示数据")
         items = generate_demo_data()
 
-    # 按时间倒序排列
-    items.sort(key=lambda x: x.get("publishedAt", ""), reverse=True)
+    # 按关联度 + 时间排序
+    items.sort(key=lambda x: (
+        x.get("relevanceScore", 0),
+        x.get("publishedAt", ""),
+    ), reverse=True)
 
     output = {
         "lastUpdated": datetime.now().isoformat(),
